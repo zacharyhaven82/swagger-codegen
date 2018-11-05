@@ -39,6 +39,28 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import io.swagger.models.properties.AbstractNumericProperty;
+import io.swagger.models.properties.ArrayProperty;
+import io.swagger.models.properties.BaseIntegerProperty;
+import io.swagger.models.properties.BinaryProperty;
+import io.swagger.models.properties.BooleanProperty;
+import io.swagger.models.properties.ByteArrayProperty;
+import io.swagger.models.properties.DateProperty;
+import io.swagger.models.properties.DateTimeProperty;
+import io.swagger.models.properties.DecimalProperty;
+import io.swagger.models.properties.DoubleProperty;
+import io.swagger.models.properties.FileProperty;
+import io.swagger.models.properties.FloatProperty;
+import io.swagger.models.properties.IntegerProperty;
+import io.swagger.models.properties.LongProperty;
+import io.swagger.models.properties.MapProperty;
+import io.swagger.models.properties.Property;
+import io.swagger.models.properties.PropertyBuilder;
+import io.swagger.models.properties.PropertyBuilder.PropertyId;
+import io.swagger.models.properties.RefProperty;
+import io.swagger.models.properties.StringProperty;
+import io.swagger.models.properties.UUIDProperty;
+
 public class Swift4Codegen extends DefaultCodegen implements CodegenConfig {
     public static final String PROJECT_NAME = "projectName";
     public static final String RESPONSE_AS = "responseAs";
@@ -356,7 +378,7 @@ public class Swift4Codegen extends DefaultCodegen implements CodegenConfig {
         if (this.reservedWordsMappings().containsKey(name)) {
             return this.reservedWordsMappings().get(name);
         }
-        return "_" + name;  // add an underscore to the name
+        return name + "Value";  // add an underscore to the name
     }
 
     @Override
@@ -368,7 +390,21 @@ public class Swift4Codegen extends DefaultCodegen implements CodegenConfig {
     @Override
     public String apiFileFolder() {
         return outputFolder + File.separator + sourceFolder
-               + apiPackage().replace('.', File.separatorChar);
+                + apiPackage().replace('.', File.separatorChar);
+    }
+
+    @Override
+    public String getModifiedTypeDeclaration(Property prop) {
+        if (prop instanceof ArrayProperty) {
+            ArrayProperty ap = (ArrayProperty) prop;
+            Property inner = ap.getItems();
+            return "[" + getTypeDeclaration(inner) + "]!";
+        } else if (prop instanceof MapProperty) {
+            MapProperty mp = (MapProperty) prop;
+            Property inner = mp.getAdditionalProperties();
+            return "[String:" + getTypeDeclaration(inner) + "]!";
+        }
+        return super.getTypeDeclaration(prop) + (toDefaultValue(prop) != null ? "!" : "?");
     }
 
     @Override
@@ -468,8 +504,23 @@ public class Swift4Codegen extends DefaultCodegen implements CodegenConfig {
 
     @Override
     public String toDefaultValue(Property prop) {
-        // nil
-        return null;
+        if (prop instanceof BooleanProperty) {
+            return "false";
+        } else if (prop instanceof DoubleProperty) {
+            return "0";
+        } else if (prop instanceof FloatProperty) {
+            return "0";
+        } else if (prop instanceof IntegerProperty) {
+            return "0";
+        } else if (prop instanceof LongProperty) {
+            return "0";
+        } else if (prop instanceof ArrayProperty) {
+            ArrayProperty ap = (ArrayProperty) prop;
+            String inner = getSwaggerType(ap.getItems());
+            return "[" + inner + "]()";
+        } else {
+            return null;
+        }
     }
 
     @Override

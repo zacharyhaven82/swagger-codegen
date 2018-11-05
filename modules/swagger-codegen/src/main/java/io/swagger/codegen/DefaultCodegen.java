@@ -1223,6 +1223,14 @@ public class DefaultCodegen {
         return swaggerType;
     }
 
+    public String getModifiedTypeDeclaration(Property p) {
+        String swaggerType = getSwaggerType(p);
+        if (typeMapping.containsKey(swaggerType)) {
+            return typeMapping.get(swaggerType);
+        }
+        return swaggerType;
+    }
+
     /**
      * Determine the type alias for the given type if it exists. This feature
      * is only used for Java, because the language does not have a aliasing
@@ -1793,6 +1801,7 @@ public class DefaultCodegen {
             }
         }
         property.datatype = getTypeDeclaration(p);
+        property.modifiedDataType = getModifiedTypeDeclaration(p);
         property.dataFormat = p.getFormat();
 
         // this can cause issues for clients which don't support enums
